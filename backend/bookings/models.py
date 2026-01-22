@@ -2,8 +2,6 @@ from django.db import models
 from django.conf import settings
 
 
-# Note: We use string references (e.g., 'users.Shipper') to avoid circular imports.
-
 class Booking(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
@@ -11,51 +9,56 @@ class Booking(models.Model):
         ('Picked_Up', 'Picked_Up'),
         ('In_Transit', 'In_Transit'),
         ('Delivered', 'Delivered'),
-        ('Cancelled', 'Cancelled')
-    )
-    CARGO_TYPES = (
-        ('Documents', 'Documents'),
-        ('Electronics', 'Electronics'),
-        ('Furniture', 'Furniture'),
-        ('Food', 'Food'),
-        ('Others', 'Others')
+        ('Cancelled', 'Cancelled'),
     )
 
-    # The User who is posting the load
-    shipper = models.ForeignKey('users.Shipper', on_delete=models.CASCADE)
-    # The Carrier (Driver) who accepts the load
-    carrier = models.ForeignKey('users.Carrier', on_delete=models.CASCADE, null=True, blank=True)
+    # Relationships
+    shipper = models.ForeignKey('users.Shipper', on_delete=models.CASCADE, related_name='bookings_as_shipper')
+    carrier = models.ForeignKey('users.Carrier', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='trips_as_carrier')
 
+    # Core Data Fields (Required by your Views and Flutter Screens)
     pickup_location = models.CharField(max_length=255)
-    pickup_latitude = models.FloatField()
-    pickup_longitude = models.FloatField()
-
     dropoff_location = models.CharField(max_length=255)
-    dropoff_latitude = models.FloatField()
-    dropoff_longitude = models.FloatField()
-
-    cargo_type = models.CharField(max_length=20, choices=CARGO_TYPES)
-    cargo_weight_kg = models.FloatField()
+    description = models.TextField(null=True, blank=True)
+    weight_kg = models.FloatField(default=0.0)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
-    fare_amount = models.FloatField()
+    fare_amount = models.FloatField(default=0.0)
+
+    # Timestamp (Required for ordering in BookingViewSet)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Booking {self.id} - {self.cargo_type} ({self.status})"
+        return f"Load {self.id} - {self.shipper.full_name if self.shipper else 'Unknown'}"
 
 
 class LocationTracking(models.Model):
-    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
-    carrier = models.ForeignKey('users.Carrier', on_delete=models.CASCADE)
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='tracking_logs')
+    carrier = models.ForeignKey('users.Carrier', on_delete=models.CASCADE, related_name='location_updates')
     latitude = models.FloatField()
     longitude = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name_plural = "Location Tracking"
+
+
+# In D:\Cargolink_App\backend\bookings\models.py
 
 class Dispute(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
-    # We use settings.AUTH_USER_MODEL for the general User reference
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='booking_disputes')
     raised_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='disputes_raised')
-    dispute_status = models.CharField(max_length=20, default='Open')
-    resolved_by = models.ForeignKey('users.AdminProfile', on_delete=models.SET_NULL, null=True)
+    reason = models.TextField()
+    is_resolved = models.BooleanField(default=False)
+
+    # Use this exact string format to resolve the E300/E307 error
+    resolved_by = models.ForeignKey(
+        'users.AdminProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_disputes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)

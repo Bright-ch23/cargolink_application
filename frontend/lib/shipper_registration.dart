@@ -44,7 +44,7 @@ class _ShipperRegistrationScreenState extends State<ShipperRegistrationScreen> {
         username: _nameController.text,
         email: _emailController.text,
         phone: _phoneController.text,
-        password: _passwordController.text,
+        password: _passwordController.text, carModel: '', carYear: '',
       );
 
       if (result.containsKey('error') && result['error'] == true) {

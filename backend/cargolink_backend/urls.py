@@ -15,32 +15,47 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-from users.views import RegisterView
 from rest_framework.routers import DefaultRouter
-from bookings.views import BookingViewSet  # Cleaned up double import
 
-# 1. Setup Router for ViewSets
+# Import your ViewSets
+from bookings.views import BookingViewSet
+
+# Import your merged User Views
+from users.views import (
+    RegisterView,
+    CarrierRegisterView,
+    LoginView
+)
+
+# Import SimpleJWT views for token refreshing
+from rest_framework_simplejwt.views import TokenRefreshView
+
+# 1. Setup Router for ViewSets (Bookings, Tracking, etc.)
 router = DefaultRouter()
-# The 'bookings' string below defines the /api/bookings/ path
-router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'', BookingViewSet, basename='booking')
 
 urlpatterns = [
-    # Admin Interface
+    # --- Admin Interface ---
     path('admin/', admin.site.urls),
 
-    # API ViewSets (This will include /api/bookings/ and /api/bookings/summary/)
+    # --- API ViewSets ---
+    # This covers /api/bookings/ and /api/bookings/summary/
     path('api/', include(router.urls)),
 
-    # Authentication Endpoints
+    # --- Authentication & User Management ---
+
+    # Standard/Shipper Registration: /api/register/
     path('api/register/', RegisterView.as_view(), name='register'),
-    # Note: Ensure your Flutter app uses 'Bearer' prefix for this login
-    path('api/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+
+    # Carrier Specific Registration: /api/register/carrier/
+    path('api/register/carrier/', CarrierRegisterView.as_view(), name='carrier_register'),
+
+    # Unified Login: /api/login/
+    # This now uses your custom LoginView which returns the user 'role'
+    path('api/login/', LoginView.as_view(), name='login'),
+
+    # JWT Token Refresh: /api/token/refresh/
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

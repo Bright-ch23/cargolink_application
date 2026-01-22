@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:cargolink_application/models/dashboard_stats.dart';
 
 class ApiService {
+  // Use 10.0.2.2 for Android Emulator, 127.0.0.1 for iOS Simulator
   final String baseUrl = "http://10.0.2.2:8000/api";
 
   Future<Map<String, dynamic>> registerUser({
@@ -11,6 +12,11 @@ class ApiService {
     required String email,
     required String phone,
     required String password,
+    String? carColor,
+    String? plateNumber,
+    String? vehicleType,
+    String? carModel,  // Changed to optional
+    String? carYear,   // Changed to optional
   }) async {
     try {
       final response = await http.post(
@@ -24,6 +30,11 @@ class ApiService {
           "email": email,
           "phone": phone,
           "password": password,
+          "vehicle_model": carModel,
+          "vehicle_year": carYear,
+          "vehicle_color": carColor,
+          "plate_number": plateNumber,
+          "vehicle_type": vehicleType,
         }),
       );
 
@@ -32,9 +43,10 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return responseData;
       } else {
+        // Improved error reporting for Django validation errors
         return {
           "error": true,
-          "message": responseData.values.join(", ")
+          "message": responseData.toString()
         };
       }
     } on SocketException {
@@ -45,7 +57,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> loginUser({
-    required String username, // Changed back to username
+    required String username,
     required String password,
   }) async {
     try {
@@ -53,7 +65,7 @@ class ApiService {
         Uri.parse('$baseUrl/login/'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "username": username, // Changed back to username
+          "username": username,
           "password": password,
         }),
       );
@@ -61,7 +73,7 @@ class ApiService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return responseData;
+        return responseData; // This contains the 'token' and 'role'
       } else {
         return {"error": true, "message": "Invalid username or password"};
       }
@@ -70,35 +82,27 @@ class ApiService {
     }
   }
 
-  Future<DashboardStats> getDashboardStats(String token, dynamic widget) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Token ${widget.authToken}',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return DashboardStats.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load dashboard stats');
-    }
-  }
-
+  // FIXED: Standardized Authorization to use Bearer (JWT)
+  // This solves the 401 error
   Future<DashboardStats> getDashboardSummary(String yourSavedToken) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/bookings/summary/'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Token $yourSavedToken', // Use 'Bearer' if using JWT
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/bookings/summary/'), // Ensure this exists in urls.py
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $yourSavedToken', // Use 'Bearer' for JWT
+        },
+      );
 
-    if (response.statusCode == 200) {
-      return DashboardStats.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to load dashboard stats');
+      if (response.statusCode == 200) {
+        return DashboardStats.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 404) {
+        throw Exception('Summary endpoint not found (404). Check Django urls.py');
+      } else {
+        throw Exception('Failed to load stats: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 }
