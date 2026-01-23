@@ -19,43 +19,24 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-# Import your ViewSets
 from bookings.views import BookingViewSet
-
-# Import your merged User Views
-from users.views import (
-    RegisterView,
-    CarrierRegisterView,
-    LoginView
-)
-
-# Import SimpleJWT views for token refreshing
+from users.views import CarrierRegisterView, LoginView, RegisterView
 from rest_framework_simplejwt.views import TokenRefreshView
 
-# 1. Setup Router for ViewSets (Bookings, Tracking, etc.)
 router = DefaultRouter()
-router.register(r'', BookingViewSet, basename='booking')
+# I changed the prefix to 'bookings' to avoid confusion with the main 'api/' path
+router.register(r'bookings', BookingViewSet, basename='booking')
 
 urlpatterns = [
-    # --- Admin Interface ---
     path('admin/', admin.site.urls),
 
-    # --- API ViewSets ---
-    # This covers /api/bookings/ and /api/bookings/summary/
-    path('api/', include(router.urls)),
-
-    # --- Authentication & User Management ---
-
-    # Standard/Shipper Registration: /api/register/
+    # --- 1. PUBLIC ENDPOINTS (Check these first) ---
     path('api/register/', RegisterView.as_view(), name='register'),
-
-    # Carrier Specific Registration: /api/register/carrier/
     path('api/register/carrier/', CarrierRegisterView.as_view(), name='carrier_register'),
-
-    # Unified Login: /api/login/
-    # This now uses your custom LoginView which returns the user 'role'
     path('api/login/', LoginView.as_view(), name='login'),
-
-    # JWT Token Refresh: /api/token/refresh/
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # --- 2. PRIVATE/ROUTED ENDPOINTS ---
+    # This will now serve endpoints at /api/bookings/
+    path('api/', include(router.urls)),
 ]

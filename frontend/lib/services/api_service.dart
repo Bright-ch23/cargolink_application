@@ -65,7 +65,7 @@ class ApiService {
         Uri.parse('$baseUrl/login/'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "username": username,
+          "email": username,
           "password": password,
         }),
       );

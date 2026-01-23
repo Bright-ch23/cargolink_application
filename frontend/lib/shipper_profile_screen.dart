@@ -145,6 +145,7 @@ class _ShipperProfileScreenState extends State<ShipperProfileScreen> {
             _buildProfileTile(context, Icons.security_outlined, "Privacy & Security", "Password, Biometrics"),
             _buildProfileTile(context, Icons.settings_outlined, "App Settings", "Language, dark mode, currency"),
             _buildProfileTile(context, Icons.help_outline, "Support", "Get help or report an issue"),
+            _buildProfileTile(context, Icons.info_outline, "About", "Learn about the project"),
 
             const SizedBox(height: 30),
 
@@ -218,6 +219,9 @@ class _ShipperProfileScreenState extends State<ShipperProfileScreen> {
           }
           if (title == "App Settings") {
             Navigator.pushNamed(context, '/settings');
+          }
+          if (title == "About") {
+            Navigator.pushNamed(context, '/about');
           }
         },
       ),

@@ -1,4 +1,6 @@
+import 'package:cargolink_application/about_screen.dart';
 import 'package:cargolink_application/carrier_login_screen.dart';
+import 'package:cargolink_application/profile_screen.dart';
 import 'package:cargolink_application/trip_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
@@ -129,6 +131,10 @@ class CargoLinkApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const AppSettingsScreen());
           case '/history':
             return MaterialPageRoute(builder: (_) => const TripHistoryScreen());
+          case '/profile':
+            return MaterialPageRoute(builder: (_) => const ProfileScreen());
+          case '/about':
+            return MaterialPageRoute(builder: (_) => const AboutScreen());
           default:
             return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Page not found'))));
         }

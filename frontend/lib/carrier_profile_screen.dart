@@ -108,6 +108,8 @@ class CarrierProfileScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 30),
+                    _buildProfileTile(context, Icons.info_outline, "About", "Learn about the project"),
+                    const SizedBox(height: 30),
 
                     // 5. Action Buttons
                     Row(
@@ -167,6 +169,27 @@ class CarrierProfileScreen extends StatelessWidget {
         border: Border.all(color: Colors.white10),
       ),
       child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+    );
+  }
+
+  Widget _buildProfileTile(BuildContext context, IconData icon, String title, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white70),
+        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+        onTap: () {
+          if (title == "About") {
+            Navigator.pushNamed(context, '/about');
+          }
+        },
+      ),
     );
   }
 }

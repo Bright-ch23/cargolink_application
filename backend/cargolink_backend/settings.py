@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,11 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&@+we680c-**n22_em^sq&a4+iyry78ob!)ysde3$=xi-b!)i('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-fallback-key')
 
 # settings.py
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
 
 # Application definition
@@ -53,6 +56,7 @@ AUTH_USER_MODEL = 'users.User'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

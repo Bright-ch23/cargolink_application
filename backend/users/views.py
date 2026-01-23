@@ -2,21 +2,20 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, generics
+from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserSerializer, CarrierRegistrationSerializer
 
 User = get_user_model()
 
-
-# --- CARRIER REGISTRATION (New) ---
+# --- CARRIER REGISTRATION ---
 class CarrierRegisterView(APIView):
     """
     Handles Carrier registration by creating both a User and a Carrier profile.
     """
-
-    permission_classes = [AllowAny]  # Allow anyone to register
+    # Fix: Disable authentication checks so new users can access without a token
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = CarrierRegistrationSerializer(data=request.data)
@@ -33,18 +32,18 @@ class CarrierRegisterView(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
 
-        # This helps you debug in the terminal
-        print(f"Registration Errors: {serializer.errors}")
+        print(f"Carrier Registration Errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# --- GENERAL/SHIPPER REGISTRATION (Updated) ---
+# --- GENERAL/SHIPPER REGISTRATION ---
 class RegisterView(APIView):
     """
     Handles standard user (Shipper) registration using the UserSerializer.
     """
-
-    permission_classes = [AllowAny]  # Allow anyone to register
+    # Fix: Disable authentication checks
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = UserSerializer(data=request.data)
@@ -61,16 +60,18 @@ class RegisterView(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
 
-        print(f"Registration Errors: {serializer.errors}")
+        print(f"Shipper Registration Errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# --- LOGIN VIEW (Unified) ---
+# --- LOGIN VIEW ---
 class LoginView(APIView):
     """
     Handles login for all users and returns their role.
     """
-    permission_classes = [AllowAny]  # Allow anyone to register
+    # Fix: Disable authentication checks
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         username = request.data.get('username')
@@ -80,7 +81,6 @@ class LoginView(APIView):
 
         if user:
             refresh = RefreshToken.for_user(user)
-
             # Determine role for Flutter routing
             role = 'carrier' if hasattr(user, 'carrier') else 'shipper'
 
@@ -89,7 +89,7 @@ class LoginView(APIView):
                 "access": str(refresh.access_token),
                 "user_id": user.pk,
                 "username": user.username,
-                "role": role  # Critical for Flutter to know where to go
+                "role": role
             }, status=status.HTTP_200_OK)
 
         return Response({"error": "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)
