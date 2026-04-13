@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'main.dart'; // Import to access themeNotifier
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key});
@@ -8,7 +9,6 @@ class AppSettingsScreen extends StatefulWidget {
 }
 
 class _AppSettingsScreenState extends State<AppSettingsScreen> {
-  bool _darkMode = true;
   bool _pushNotifications = true;
   bool _emailReports = false;
   String _selectedLanguage = 'English';
@@ -16,7 +16,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("App Settings"),
         backgroundColor: Colors.transparent,
@@ -26,15 +26,22 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           _buildSectionHeader("Preferences"),
-          _buildSettingTile(
-            "Dark Mode",
-            "Adjust the app's appearance",
-            Icons.dark_mode_outlined,
-            trailing: Switch(
-              value: _darkMode,
-              onChanged: (val) => setState(() => _darkMode = val),
-              activeColor: Colors.blueAccent,
-            ),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (context, currentMode, _) {
+              return _buildSettingTile(
+                "Dark Mode",
+                "Adjust the app's appearance",
+                Icons.dark_mode_outlined,
+                trailing: Switch(
+                  value: currentMode == ThemeMode.dark,
+                  onChanged: (val) {
+                    themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                  },
+                  activeColor: Colors.blueAccent,
+                ),
+              );
+            },
           ),
           _buildSettingTile(
             "Push Notifications",
@@ -88,7 +95,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
           Center(
             child: TextButton(
               onPressed: () {},
-              child: const Text("Restore Default Settings", style: TextStyle(color: Colors.white24)),
+              child: Text(
+                "Restore Default Settings",
+                style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5)),
+              ),
             ),
           ),
         ],
@@ -115,15 +125,17 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? Colors.white.withOpacity(0.05) 
+            : Colors.black.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         onTap: onTap,
-        leading: Icon(icon, color: Colors.white70, size: 22),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
-        subtitle: subtitle.isNotEmpty ? Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)) : null,
-        trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+        leading: Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.7), size: 22),
+        title: Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 15)),
+        subtitle: subtitle.isNotEmpty ? Text(subtitle, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6), fontSize: 12)) : null,
+        trailing: trailing ?? Icon(Icons.chevron_right, color: Theme.of(context).iconTheme.color?.withOpacity(0.3), size: 18),
       ),
     );
   }
@@ -132,13 +144,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F26),
-        title: const Text("Select Language", style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).dialogBackgroundColor,
+        title: const Text("Select Language"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: ['English', 'Spanish', 'French', 'German'].map((lang) {
             return ListTile(
-              title: Text(lang, style: const TextStyle(color: Colors.white70)),
+              title: Text(lang),
               onTap: () {
                 setState(() => _selectedLanguage = lang);
                 Navigator.pop(context);

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class TrackingMapScreen extends StatefulWidget {
-  final String bookingId; // Pass the ID of the booking to track
+  final String bookingId; 
   final String token;
 
   const TrackingMapScreen({super.key, required this.bookingId, required this.token});
@@ -16,6 +16,7 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
   final String baseUrl = "http://10.0.2.2:8000/api";
   Map<String, dynamic>? trackingData;
   bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -24,12 +25,17 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
   }
 
   Future<void> fetchTrackingData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/bookings/${widget.bookingId}/track/'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
+          'Authorization': 'Token ${widget.token}', // Fixed: Using Token instead of Bearer
         },
       );
 
@@ -38,8 +44,17 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
           trackingData = jsonDecode(response.body);
           isLoading = false;
         });
+      } else {
+        setState(() {
+          errorMessage = "Unable to find tracking data for this booking.";
+          isLoading = false;
+        });
       }
     } catch (e) {
+      setState(() {
+        errorMessage = "Connection error. Please check your internet.";
+        isLoading = false;
+      });
       print("Tracking Error: $e");
     }
   }
@@ -65,6 +80,19 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
+                  const SizedBox(height: 16),
+                  Text(errorMessage!, style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(onPressed: fetchTrackingData, child: const Text("Retry"))
+                ],
+              ),
+            )
           : Stack(
         children: [
           // MAP PLACEHOLDER
@@ -77,10 +105,11 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.location_on, color: Colors.blueAccent, size: 50),
+                  const SizedBox(height: 10),
                   Text(
-                    "Lat: ${trackingData?['lat']} \n Lng: ${trackingData?['lng']}",
+                    "Coordinates:\nLat: ${trackingData?['lat'] ?? '0.0'} \n Lng: ${trackingData?['lng'] ?? '0.0'}",
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white38),
+                    style: const TextStyle(color: Colors.white38, fontSize: 16),
                   ),
                 ],
               ),
@@ -93,6 +122,13 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
             minChildSize: 0.2,
             maxChildSize: 0.6,
             builder: (context, scrollController) {
+              String lastUpdatedStr = "N/A";
+              if (trackingData?['last_updated'] != null) {
+                try {
+                  lastUpdatedStr = trackingData!['last_updated'].toString().split('T')[1].substring(0, 5);
+                } catch (_) {}
+              }
+
               return Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFF1A1F26),
@@ -116,9 +152,9 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(trackingData?['driver_name'] ?? "Unknown Driver",
+                              Text(trackingData?['driver_name'] ?? "Swift Haulage",
                                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                              Text(trackingData?['vehicle'] ?? "In Transit",
+                              Text(trackingData?['vehicle'] ?? "Standard Truck",
                                   style: const TextStyle(color: Colors.white54, fontSize: 14)),
                             ],
                           ),
@@ -130,8 +166,8 @@ class _TrackingMapScreenState extends State<TrackingMapScreen> {
                       ],
                     ),
                     const Divider(color: Colors.white10, height: 40),
-                    _buildTrackingStep("Current Status", trackingData?['status'] ?? "Checking...", true, true),
-                    _buildTrackingStep("Last Updated", trackingData?['last_updated']?.toString().substring(11, 16) ?? "N/A", false, false),
+                    _buildTrackingStep("Current Status", trackingData?['status'] ?? "Processing...", true, true),
+                    _buildTrackingStep("Last Updated", lastUpdatedStr, false, false),
                   ],
                 ),
               );

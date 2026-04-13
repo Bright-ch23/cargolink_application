@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cargolink_application/services/api_service.dart';
 import 'package:cargolink_application/shipper_dashboard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ShipperLoginScreen extends StatefulWidget {
   const ShipperLoginScreen({super.key});
@@ -32,29 +33,52 @@ class _ShipperLoginScreenState extends State<ShipperLoginScreen> {
       _isLoading = true;
     });
 
+    // 1. Trim the username to prevent 400 errors from trailing spaces
+    final String username = _usernameController.text.trim();
+    final String password = _passwordController.text;
+
     final result = await _apiService.loginUser(
-      username: _usernameController.text,
-      password: _passwordController.text,
+      username: username,
+      password: password,
     );
 
     setState(() {
       _isLoading = false;
     });
 
+    // 2. Enhanced error checking based on your Django logs
     if (result.containsKey('error') && result['error'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login Failed: ${result['message']}')),
+        SnackBar(
+          content: Text('Login Failed: ${result['message']}'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
-    } else {
-      final username = result['username'] ?? 'User';
-      // Correctly extract the token, checking for 'access' for JWT
-      final token = result['access'] ?? result['token'] ?? ''; 
-      
+    } else if (result.containsKey('access')) {
+      // 3. Extract the JWT Access Token
+      final token = result['access'];
+      final loginUsername = result['username'] ?? username;
+
+      // 4. PERSISTENCE: Save the token so other screens can use it (Fixes 401 Error)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('jwt_token', token);
+      await prefs.setString('username', loginUsername);
+
+      if (!mounted) return;
+
+      // 5. Navigate to Dashboard with the clean token
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ShipperDashboard(username: username, token: token),
+          builder: (context) => ShipperDashboard(
+              username: loginUsername,
+              token: token
+          ),
         ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid response format from server.')),
       );
     }
   }

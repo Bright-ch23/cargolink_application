@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cargolink_application/models/dashboard_stats.dart';
 
 class ApiService {
-  // Use 10.0.2.2 for Android Emulator, 127.0.0.1 for iOS Simulator
   final String baseUrl = "http://10.0.2.2:8000/api";
 
   Future<Map<String, dynamic>> registerUser({
@@ -12,11 +12,9 @@ class ApiService {
     required String email,
     required String phone,
     required String password,
-    String? carColor,
-    String? plateNumber,
-    String? vehicleType,
-    String? carModel,  // Changed to optional
-    String? carYear,   // Changed to optional
+    String carModel = "",
+    String carYear = "",
+    String carColor = "",
   }) async {
     try {
       final response = await http.post(
@@ -33,8 +31,6 @@ class ApiService {
           "vehicle_model": carModel,
           "vehicle_year": carYear,
           "vehicle_color": carColor,
-          "plate_number": plateNumber,
-          "vehicle_type": vehicleType,
         }),
       );
 
@@ -43,10 +39,9 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return responseData;
       } else {
-        // Improved error reporting for Django validation errors
         return {
           "error": true,
-          "message": responseData.toString()
+          "message": responseData.values.join(", ")
         };
       }
     } on SocketException {
@@ -65,7 +60,7 @@ class ApiService {
         Uri.parse('$baseUrl/login/'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "email": username,
+          "username": username,
           "password": password,
         }),
       );
@@ -73,7 +68,7 @@ class ApiService {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return responseData; // This contains the 'token' and 'role'
+        return responseData;
       } else {
         return {"error": true, "message": "Invalid username or password"};
       }
@@ -82,27 +77,92 @@ class ApiService {
     }
   }
 
-  // FIXED: Standardized Authorization to use Bearer (JWT)
-  // This solves the 401 error
-  Future<DashboardStats> getDashboardSummary(String yourSavedToken) async {
+  Future<List<dynamic>> fetchRecentShipments() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('jwt_token');
+
+    if (token == null) {
+      throw Exception("Authentication failed. Please log in again.");
+    }
+
+    final url = Uri.parse('$baseUrl/bookings/summary/');
+
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/bookings/summary/'), // Ensure this exists in urls.py
+        url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $yourSavedToken', // Use 'Bearer' for JWT
+          'Authorization': 'Bearer $token',
         },
       );
 
       if (response.statusCode == 200) {
-        return DashboardStats.fromJson(jsonDecode(response.body));
-      } else if (response.statusCode == 404) {
-        throw Exception('Summary endpoint not found (404). Check Django urls.py');
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw Exception("Authentication failed. Please log in again.");
       } else {
-        throw Exception('Failed to load stats: ${response.statusCode}');
+        throw Exception("Failed to load shipments: \${response.statusCode}");
       }
     } catch (e) {
-      rethrow;
+      throw Exception("Connection failed: \$e");
+    }
+  }
+
+  Future<bool> postNewLoad(Map<String, dynamic> loadData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('jwt_token');
+
+    if (token == null) {
+      throw Exception("Authentication failed. Please log in again.");
+    }
+
+    final url = Uri.parse('$baseUrl/shipments/'); // Update to your actual route
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(loadData),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      throw Exception("Failed to post load: \$e");
+    }
+  }
+
+  Future<DashboardStats> getDashboardStats(String token, dynamic widget) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/dashboard/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return DashboardStats.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load dashboard stats');
+    }
+  }
+
+  Future<DashboardStats> getDashboardSummary(String yourSavedToken) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/bookings/summary/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $yourSavedToken',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return DashboardStats.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load dashboard stats');
     }
   }
 }
