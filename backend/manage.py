@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
-from ast import main
-import cargolink_backend
 import os
 import sys
 
