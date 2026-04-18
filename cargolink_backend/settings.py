@@ -15,7 +15,7 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 
 # In settings.py
-ALLOWED_HOSTS = ['cargolink-backend.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['cargolink-application.onrender.com', 'localhost', '127.0.0.1']
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(ALLOWED_HOSTS)
 
