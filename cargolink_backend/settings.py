@@ -14,10 +14,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-only-key')
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
-render_external_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if render_external_hostname:
-    ALLOWED_HOSTS.append(render_external_hostname)
+
+# In settings.py
+ALLOWED_HOSTS = ['cargolink-backend.onrender.com', 'localhost', '127.0.0.1']
+if ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(ALLOWED_HOSTS)
 
 extra_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
 if extra_allowed_hosts:
