@@ -1,9 +1,8 @@
-from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from bookings.models import Booking
-from cargolink_backend import settings
+from backend.cargolink_backend import settings
 
 
 class Rating(models.Model):
