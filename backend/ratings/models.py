@@ -1,12 +1,12 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from bookings.models import Booking
-from backend.cargolink_backend import settings
+from bookings import bookings
+from django.conf import settings
 
 
 class Rating(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
+    booking = models.ForeignKey(bookings, on_delete=models.CASCADE)
 
     class Rating(models.Model):
         # Change from 'User' to settings.AUTH_USER_MODEL
