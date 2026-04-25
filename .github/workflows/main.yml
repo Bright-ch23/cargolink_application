@@ -1,5 +1,5 @@
 name: Build APK
-on: [push, workflow_dispatch] # workflow_dispatch lets you run it manually
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -13,8 +13,11 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - run: flutter --version  # Verify Flutter is working
       - run: flutter pub get
-      - run: flutter build apk --debug # --debug is faster and avoids signing issues
+        working-directory: ./  # Explicitly set working directory
+      - run: flutter build apk --debug
+        working-directory: ./
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
