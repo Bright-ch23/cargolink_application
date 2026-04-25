@@ -16,18 +16,22 @@ jobs:
         with:
           channel: 'stable'
           
-      - run: flutter --version
-      
+      - name: Find Flutter Folder
+        id: find-flutter
+        run: |
+          # This finds the exact folder where pubspec.yaml lives
+          FLUTTER_DIR=$(dirname $(find . -name "pubspec.yaml" | head -n 1))
+          echo "Found Flutter app in: $FLUTTER_DIR"
+          echo "APP_DIR=$FLUTTER_DIR" >> $GITHUB_ENV
+
       - name: Install Dependencies
-        run: flutter pub get
-        working-directory: frontend
+        run: cd ${{ env.APP_DIR }} && flutter pub get
         
       - name: Build APK
-        run: flutter build apk --debug
-        working-directory: frontend
+        run: cd ${{ env.APP_DIR }} && flutter build apk --debug
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk
-          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
+          path: ${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-debug.apk
