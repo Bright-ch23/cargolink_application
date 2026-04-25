@@ -13,13 +13,28 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - run: flutter --version  # Verify Flutter is working
+      - run: flutter --version
+      - name: Find Flutter project
+        run: |
+          echo "Searching for pubspec.yaml..."
+          find . -name "pubspec.yaml" -type f
+          if [ -f pubspec.yaml ]; then
+            echo "Found pubspec.yaml at root"
+            PROJECT_DIR="."
+          elif [ -f cargolink/pubspec.yaml ]; then
+            echo "Found pubspec.yaml in cargolink directory"
+            PROJECT_DIR="cargolink"
+          else
+            echo "ERROR: pubspec.yaml not found!"
+            exit 1
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
       - run: flutter pub get
-        working-directory: ./  # Explicitly set working directory
+        working-directory: ${{ env.PROJECT_DIR }}
       - run: flutter build apk --debug
-        working-directory: ./
+        working-directory: ${{ env.PROJECT_DIR }}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-debug.apk
