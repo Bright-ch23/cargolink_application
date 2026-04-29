@@ -5,7 +5,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 1. Direct it to the branch new_frontend
       - uses: actions/checkout@v4
+        with:
+          ref: 'new_frontend'
       
       - uses: actions/setup-java@v4
         with:
@@ -16,22 +19,17 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Find Flutter Folder
-        id: find-flutter
-        run: |
-          # This finds the exact folder where pubspec.yaml lives
-          FLUTTER_DIR=$(dirname $(find . -name "pubspec.yaml" | head -n 1))
-          echo "Found Flutter app in: $FLUTTER_DIR"
-          echo "APP_DIR=$FLUTTER_DIR" >> $GITHUB_ENV
-
+      # 2 & 3. Look inside the frontend folder for pubspec.yaml
       - name: Install Dependencies
-        run: cd ${{ env.APP_DIR }} && flutter pub get
+        run: flutter pub get
+        working-directory: frontend
         
       - name: Build APK
-        run: cd ${{ env.APP_DIR }} && flutter build apk --debug
+        run: flutter build apk --debug
+        working-directory: frontend
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk
-          path: ${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-debug.apk
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
