@@ -112,32 +112,51 @@ class LoginView(APIView):
     permission_classes = [AllowAny]  # FIX: allow unauthenticated access (was causing 400)
 
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        try:
+            # Get request data - handle both JSON and form data
+            data = request.data if hasattr(request, 'data') else request.POST
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
 
-        if not username or not password:  # FIX: guard against missing fields early
+            # Validate input
+            if not username or not password:
+                return Response(
+                    {
+                        "error": "Username and password are required",
+                        "received": {
+                            "username": bool(username),
+                            "password": bool(password)
+                        }
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Authenticate user
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+                ensure_user_profile(user)
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                return Response({
+                    "refresh": str(refresh),
+                    "access": access_token,
+                    "token": access_token,
+                    "user_id": user.pk,
+                    "username": user.username,
+                    "user_type": user.user_type,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"error": "Invalid username or password"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+        except Exception as e:
+            # Log the error for debugging
             return Response(
-                {"error": "Username and password required"},
+                {
+                    "error": "An error occurred during login",
+                    "details": str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        user = authenticate(username=username, password=password)
-
-        if user:
-            ensure_user_profile(user)
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            return Response({
-                "refresh": str(refresh),
-                "access": access_token,
-                "token": access_token,
-                "user_id": user.pk,
-                "username": user.username,
-                "user_type": user.user_type,
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"error": "Invalid credentials"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-            # NOTE: removed dead code that existed after this return statement
