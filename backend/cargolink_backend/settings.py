@@ -15,7 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-only-key')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # 4. ALLOWED HOSTS - Fixed the recursive list error
-ALLOWED_HOSTS = ['cargolink-application.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['cargolink-application-1.onrender.com', 'localhost', '127.0.0.1']
 
 extra_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
 if extra_allowed_hosts:
