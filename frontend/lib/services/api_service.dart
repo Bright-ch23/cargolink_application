@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cargolink_application/models/dashboard_stats.dart';
 
 class ApiService {
-  final String baseUrl = "http://10.0.2.2:8000/api";
+  final String baseUrl = "https://cargolink-application-1.onrender.com/api";
   final Duration requestTimeout = const Duration(seconds: 90);
 
   Future<Map<String, dynamic>> registerUser({
