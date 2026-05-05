@@ -6,6 +6,7 @@ import 'package:cargolink_application/models/dashboard_stats.dart';
 
 class ApiService {
   final String baseUrl = "http://10.0.2.2:8000/api";
+  final Duration requestTimeout = const Duration(seconds: 90);
 
   Future<Map<String, dynamic>> registerUser({
     required String username,
@@ -32,7 +33,9 @@ class ApiService {
           "vehicle_year": carYear,
           "vehicle_color": carColor,
         }),
-      );
+      ).timeout(requestTimeout, onTimeout: () {
+        throw TimeoutException('Registration request timed out after 90 seconds');
+      });
 
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
@@ -46,6 +49,8 @@ class ApiService {
       }
     } on SocketException {
       return {"error": true, "message": "Cannot connect to server. Check if Django is running."};
+    } on TimeoutException {
+      return {"error": true, "message": "Request timed out. Server is not responding. Please try again."};
     } catch (e) {
       return {"error": true, "message": e.toString()};
     }
@@ -63,7 +68,9 @@ class ApiService {
           "username": username,
           "password": password,
         }),
-      );
+      ).timeout(requestTimeout, onTimeout: () {
+        throw TimeoutException('Login request timed out after 90 seconds');
+      });
 
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
@@ -72,6 +79,8 @@ class ApiService {
       } else {
         return {"error": true, "message": "Invalid username or password"};
       }
+    } on TimeoutException {
+      return {"error": true, "message": "Login request timed out. Server is not responding. Please try again."};
     } catch (e) {
       return {"error": true, "message": "Connection failed: $e"};
     }
@@ -94,17 +103,21 @@ class ApiService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(requestTimeout, onTimeout: () {
+        throw TimeoutException('Fetching shipments request timed out after 90 seconds');
+      });
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
         throw Exception("Authentication failed. Please log in again.");
       } else {
-        throw Exception("Failed to load shipments: \${response.statusCode}");
+        throw Exception("Failed to load shipments: ${response.statusCode}");
       }
+    } on TimeoutException {
+      throw Exception("Request timed out while fetching shipments. Please try again.");
     } catch (e) {
-      throw Exception("Connection failed: \$e");
+      throw Exception("Connection failed: $e");
     }
   }
 
@@ -126,11 +139,15 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode(loadData),
-      );
+      ).timeout(requestTimeout, onTimeout: () {
+        throw TimeoutException('Post new load request timed out after 90 seconds');
+      });
 
       return response.statusCode == 201;
+    } on TimeoutException {
+      throw Exception("Request timed out while posting load. Please try again.");
     } catch (e) {
-      throw Exception("Failed to post load: \$e");
+      throw Exception("Failed to post load: $e");
     }
   }
 
@@ -141,7 +158,9 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Token ${token}',
       },
-    );
+    ).timeout(requestTimeout, onTimeout: () {
+      throw TimeoutException('Get dashboard stats request timed out after 90 seconds');
+    });
 
     if (response.statusCode == 200) {
       return DashboardStats.fromJson(json.decode(response.body));
@@ -157,7 +176,9 @@ class ApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $yourSavedToken',
       },
-    );
+    ).timeout(requestTimeout, onTimeout: () {
+      throw TimeoutException('Get dashboard summary request timed out after 90 seconds');
+    });
 
     if (response.statusCode == 200) {
       return DashboardStats.fromJson(jsonDecode(response.body));
